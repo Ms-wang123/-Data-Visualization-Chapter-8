@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第八章 - 数据可视化展示</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>第八章 - 数据可视化展示</h1>
+            <p>交互式数据可视化仪表板</p>
+        </header>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="chartSelect">选择图表:</label>
+                <select id="chartSelect">
+                    <option value="all">全部显示</option>
+                    <option value="contour">8.1 等高线图</option>
+                    <option value="stream">8.2 矢量场流线图</option>
+                    <option value="stem">8.3 棉棒图</option>
+                    <option value="dumbbell">8.4 哑铃图</option>
+                    <option value="gantt">8.5 甘特图</option>
+                    <option value="pyramid">8.6 人口金字塔</option>
+                    <option value="funnel">8.7 漏斗图</option>
+                    <option value="sankey">8.8 桑基图</option>
+                    <option value="tree">8.9 树状图</option>
+                    <option value="waffle">8.10 华夫饼图</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="chartTypeSelector">图表类型:</label>
+                <select id="chartTypeSelector">
+                    <option value="current">当前类型</option>
+                    <option value="bar">柱状图</option>
+                    <option value="line">折线图</option>
+                    <option value="scatter">散点图</option>
+                    <option value="pie">饼图</option>
+                    <option value="area">面积图</option>
+                    <option value="radar">雷达图</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="dataRange">数据范围:</label>
+                <input type="range" id="dataRange" min="10" max="100" value="100">
+                <span id="dataRangeValue">100%</span>
+            </div>
+            <div class="control-group">
+                <label for="themeColor">主题色:</label>
+                <input type="color" id="themeColor" value="#667eea">
+                <label for="fontSize">字体大小:</label>
+                <input type="range" id="fontSize" min="12" max="24" value="14">
+            </div>
+            <div class="control-group">
+                <button id="refreshData">刷新数据</button>
+                <button id="exportCharts">导出图表</button>
+                <button id="toggleDragMode">拖放模式</button>
+                <button id="openStyleModal">样式自定义</button>
+            </div>
+        </div>
+
+        <!-- 拖放数据输入区域 -->
+        <div id="dragDropArea" class="drag-drop-area hidden">
+            <div class="drag-drop-header">
+                <h3>拖放数据文件</h3>
+                <p>支持CSV、JSON、Excel文件格式</p>
+                <button id="closeDragArea">关闭</button>
+            </div>
+            <div class="drag-drop-zone" id="dragDropZone">
+                <div class="drag-drop-content">
+                    <i class="upload-icon">📁</i>
+                    <p>将文件拖放到此处或点击选择文件</p>
+                    <input type="file" id="fileInput" multiple accept=".csv,.json,.xlsx,.xls">
+                </div>
+            </div>
+            <div class="data-preview" id="dataPreview">
+                <h4>数据预览</h4>
+                <div id="previewContent"></div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <!-- 8.1 等高线图 -->
+            <div class="chart-container" data-chart="contour">
+                <h3>8.1 绘制等高线图</h3>
+                <div class="chart-wrapper">
+                    <div id="contourChart"></div>
+                </div>
+                <div class="chart-controls">
+                    <label>网格密度: <input type="range" id="contourDensity" min="50" max="500" value="256"></label>
+                    <label>等高线数量: <input type="range" id="contourLevels" min="5" max="20" value="8"></label>
+                </div>
+            </div>
+
+            <!-- 8.2 矢量场流线图 -->
+            <div class="chart-container" data-chart="stream">
+                <h3>8.2 绘制矢量场流线图</h3>
+                <div class="chart-wrapper">
+                    <div id="streamChart"></div>
+                </div>
+                <div class="chart-controls">
+                    <label>流线密度: <input type="range" id="streamDensity" min="5" max="20" value="10"></label>
+                </div>
+            </div>
+
+            <!-- 8.3 棉棒图 -->
+            <div class="chart-container" data-chart="stem">
+                <h3>8.3 绘制棉棒图</h3>
+                <div class="chart-wrapper">
+                    <canvas id="stemChart"></canvas>
+                </div>
+                <div class="chart-controls">
+                    <label>显示数据: <input type="checkbox" id="stemShowData" checked></label>
+                    <button id="customizeStemData">自定义数据</button>
+                </div>
+            </div>
+
+            <!-- 8.4 哑铃图 -->
+            <div class="chart-container" data-chart="dumbbell">
+                <h3>8.4 绘制哑铃图</h3>
+                <div class="chart-wrapper">
+                    <div id="dumbbellChart"></div>
+                </div>
+                <div class="chart-controls">
+                    <button id="customizeDumbbellData">自定义数据</button>
+                </div>
+            </div>
+
+            <!-- 8.5 甘特图 -->
+            <div class="chart-container" data-chart="gantt">
+                <h3>8.5 绘制甘特图</h3>
+                <div class="chart-wrapper">
+                    <div id="ganttChart"></div>
+                </div>
+                <div class="chart-controls">
+                    <button id="addGanttTask">添加任务</button>
+                    <button id="customizeGanttData">自定义数据</button>
+                </div>
+            </div>
+
+            <!-- 8.6 人口金字塔 -->
+            <div class="chart-container" data-chart="pyramid">
+                <h3>8.6 绘制人口金字塔图</h3>
+                <div class="chart-wrapper">
+                    <div id="pyramidChart"></div>
+                </div>
+                <div class="chart-controls">
+                    <label>年龄组: <input type="range" id="ageGroups" min="5" max="15" value="10"></label>
+                    <button id="customizePyramidData">自定义数据</button>
+                </div>
+            </div>
+
+            <!-- 8.7 漏斗图 -->
+            <div class="chart-container" data-chart="funnel">
+                <h3>8.7 绘制漏斗图</h3>
+                <div class="chart-wrapper">
+                    <div id="funnelChart"></div>
+                </div>
+                <div class="chart-controls">
+                    <button id="customizeFunnelData">自定义数据</button>
+                </div>
+            </div>
+
+            <!-- 8.8 桑基图 -->
+            <div class="chart-container" data-chart="sankey">
+                <h3>8.8 绘制桑基图</h3>
+                <div class="chart-wrapper">
+                    <div id="sankeyChart"></div>
+                </div>
+                <div class="chart-controls">
+                    <button id="customizeSankeyData">自定义数据</button>
+                </div>
+            </div>
+
+            <!-- 8.9 树状图 -->
+            <div class="chart-container" data-chart="tree">
+                <h3>8.9 绘制树状图</h3>
+                <div class="chart-wrapper">
+                    <div id="treeChart"></div>
+                </div>
+                <div class="chart-controls">
+                    <label>聚类方法: <select id="linkageMethod"><option value="ward">Ward</option><option value="complete">Complete</option><option value="average">Average</option></select></label>
+                </div>
+            </div>
+
+            <!-- 8.10 华夫饼图 -->
+            <div class="chart-container" data-chart="waffle">
+                <h3>8.10 绘制华夫饼图</h3>
+                <div class="chart-wrapper">
+                    <div id="waffleChart"></div>
+                </div>
+                <div class="chart-controls">
+                    <label>行数: <input type="number" id="waffleRows" min="5" max="20" value="10"></label>
+                    <label>列数: <input type="number" id="waffleCols" min="5" max="20" value="10"></label>
+                    <button id="customizeWaffleData">自定义数据</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 自定义数据模态框 -->
+        <div id="dataModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>自定义数据</h2>
+                <div id="modalBody"></div>
+                <button id="saveData">保存</button>
+            </div>
+        </div>
+
+        <!-- 样式自定义模态框 -->
+        <div id="styleModal" class="modal">
+            <div class="modal-content">
+                <span class="close-style">&times;</span>
+                <h2>样式自定义</h2>
+                <div class="style-controls">
+                    <div class="style-group">
+                        <h3>颜色设置</h3>
+                        <div class="color-options">
+                            <label>主题色: <input type="color" id="customThemeColor" value="#667eea"></label>
+                            <label>背景色: <input type="color" id="customBgColor" value="#ffffff"></label>
+                            <label>文字色: <input type="color" id="customTextColor" value="#333333"></label>
+                            <label>图表色系: 
+                                <select id="colorScheme">
+                                    <option value="default">默认</option>
+                                    <option value="pastel">柔和</option>
+                                    <option value="vibrant">鲜艳</option>
+                                    <option value="monochrome">单色</option>
+                                    <option value="rainbow">彩虹</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="style-group">
+                        <h3>字体设置</h3>
+                        <div class="font-options">
+                            <label>字体类型: 
+                                <select id="fontFamily">
+                                    <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                                    <option value="'Microsoft YaHei', sans-serif">微软雅黑</option>
+                                    <option value="'SimHei', sans-serif">黑体</option>
+                                    <option value="'SimSun', serif">宋体</option>
+                                    <option value="'KaiTi', serif">楷体</option>
+                                    <option value="Arial, sans-serif">Arial</option>
+                                    <option value="'Times New Roman', serif">Times New Roman</option>
+                                </select>
+                            </label>
+                            <label>标题大小: <input type="range" id="titleSize" min="16" max="32" value="24"></label>
+                            <label>正文字体: <input type="range" id="bodySize" min="10" max="20" value="14"></label>
+                            <label>字体粗细: 
+                                <select id="fontWeight">
+                                    <option value="normal">正常</option>
+                                    <option value="bold">粗体</option>
+                                    <option value="lighter">细体</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="style-group">
+                        <h3>布局设置</h3>
+                        <div class="layout-options">
+                            <label>图表间距: <input type="range" id="chartSpacing" min="10" max="40" value="25"></label>
+                            <label>圆角大小: <input type="range" id="borderRadius" min="5" max="20" value="15"></label>
+                            <label>阴影效果: <input type="checkbox" id="shadowEffect" checked></label>
+                            <label>动画效果: <input type="checkbox" id="animationEffect" checked></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button id="applyStyles">应用样式</button>
+                    <button id="resetStyles">重置默认</button>
+                    <button id="saveStyles">保存预设</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script src="test-layout.js"></script>
+</body>
+</html>
